@@ -222,7 +222,7 @@ function App() {
             <Button 
               variant="ghost" 
               className="w-full justify-start text-white hover:bg-white/10"
-              onClick={() => window.open('tel:+5573999422663')}
+              onClick={() => window.open('https://wa.me/5573999422663', '_blank')}
             >
               <Phone className="mr-3 h-5 w-5" />
               Ligar Diretamente
