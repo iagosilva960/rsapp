@@ -324,7 +324,7 @@ function App() {
   }
 
   const renderHome = () => (
-    <div className="min-h-screen bg-primary text-white">
+    <div className="min-h-screen bg-primary text-white relative">
       {/* Header */}
       <div className="p-6 text-center">
         <h1 className="text-2xl font-bold mb-2">GRUPO</h1>
@@ -434,18 +434,14 @@ function App() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/10 border-white/20">
-          <CardContent className="p-4">
-            <Button 
+                <Button 
               variant="ghost" 
-              className="w-full justify-start text-white hover:bg-white/10"
+              className="absolute top-4 right-4 text-white hover:bg-white/10 p-2 rounded-full"
               onClick={() => setCurrentView(isAdminLoggedIn ? 'admin-panel' : 'admin-login')}
             >
-              <Shield className="mr-3 h-5 w-5" />
-              {isAdminLoggedIn ? 'Painel Administrativo' : 'Acesso Administrativo'}
+              <Shield className="h-5 w-5" />
+              {/* {isAdminLoggedIn ? 'Painel Administrativo' : 'Acesso Administrativo'} */}
             </Button>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Footer */}
