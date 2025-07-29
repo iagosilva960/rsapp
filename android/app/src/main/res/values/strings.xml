@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Grupo RS Guincho</string>
+    <string name="title_activity_main">Grupo RS Guincho</string>
+    <string name="package_name">com.gruporsbrasil.guincho</string>
+    <string name="custom_url_scheme">com.gruporsbrasil.guincho</string>
+</resources>
