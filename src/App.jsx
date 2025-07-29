@@ -72,6 +72,11 @@ function App() {
     })
   }, [])
 
+  // Função para detectar se é iOS
+  const isIOS = () => {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  }
+
   const handleInstallPWA = () => {
     if (deferredPrompt) {
       deferredPrompt.prompt()
@@ -214,7 +219,8 @@ function App() {
         </Button>
       </div>
 
-      {deferredPrompt && (
+      {/* Botão de instalação ou instruções para iOS */}
+      {!isIOS() && deferredPrompt && (
         <div className="px-6 mb-6">
           <Button 
             onClick={handleInstallPWA}
@@ -222,6 +228,26 @@ function App() {
           >
             Baixar Aplicativo
           </Button>
+        </div>
+      )}
+
+      {isIOS() && (
+        <div className="px-6 mb-6">
+          <Card className="bg-blue-50 border-blue-200">
+            <CardContent className="p-4">
+              <div className="text-center">
+                <h3 className="font-semibold text-blue-800 mb-2">📱 Adicionar à Tela de Início</h3>
+                <p className="text-sm text-blue-700 mb-3">
+                  Para usar como aplicativo no seu iPhone/iPad:
+                </p>
+                <div className="text-left text-sm text-blue-600 space-y-1">
+                  <p>1. Toque no ícone de compartilhamento ⬆️</p>
+                  <p>2. Role para baixo e toque em "Adicionar à Tela de Início"</p>
+                  <p>3. Toque em "Adicionar" no canto superior direito</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
