@@ -566,8 +566,7 @@ function App() {
 
     // Buscar em todos os dispositivos salvos no localStorage
     const allKeys = Object.keys(localStorage)
-    const vehicleKeys = allKeys.filter(key => key.startsWith('guincho_vehicles_'))
-    
+    const vehicleKeys = allKeys.filter(key => key.startsWith("guincho_vehicles_"))    
     let foundVehicles = []
     
     vehicleKeys.forEach(key => {
