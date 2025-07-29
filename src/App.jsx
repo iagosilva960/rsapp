@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
 import { Checkbox } from '@/components/ui/checkbox.jsx'
-import { MapPin, Phone, Truck, Clock, User, Car, History, Wifi } from 'lucide-react'
+import { MapPin, Phone, Truck, Clock, User, Car, History, Wifi, Shield, LogIn, LogOut } from 'lucide-react'
 import { WebInterface } from './components/WebInterface.jsx'
 import './App.css'
 
@@ -42,6 +42,16 @@ function App() {
   const [vehicleOwnerCpf, setVehicleOwnerCpf] = useState('')
   const [recoverName, setRecoverName] = useState('')
   const [recoverCpf, setRecoverCpf] = useState('')
+  
+  // Estados para sistema administrativo
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
+  const [adminUsername, setAdminUsername] = useState('')
+  const [adminPassword, setAdminPassword] = useState('')
+  const [adminRequests, setAdminRequests] = useState([])
+  const [adminStats, setAdminStats] = useState({})
+  
+  // URL da API do backend
+  const API_BASE_URL = 'http://localhost:5000/api'
   
   useEffect(() => {
     // Gerar ou recuperar ID único do dispositivo
@@ -90,6 +100,124 @@ function App() {
       })
     }
   }
+
+  // Funções administrativas
+  const checkAdminStatus = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/status`, {
+        method: 'GET',
+        credentials: 'include'
+      })
+      const data = await response.json()
+      if (data.logged_in) {
+        setIsAdminLoggedIn(true)
+        loadAdminData()
+      }
+    } catch (error) {
+      console.error('Erro ao verificar status admin:', error)
+    }
+  }
+
+  const handleAdminLogin = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          username: adminUsername,
+          password: adminPassword
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setIsAdminLoggedIn(true)
+        setAdminUsername('')
+        setAdminPassword('')
+        setCurrentView('admin-panel')
+        loadAdminData()
+        alert('Login administrativo realizado com sucesso!')
+      } else {
+        alert('Credenciais inválidas')
+      }
+    } catch (error) {
+      console.error('Erro no login admin:', error)
+      alert('Erro ao fazer login')
+    }
+  }
+
+  const handleAdminLogout = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/admin/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+      setIsAdminLoggedIn(false)
+      setCurrentView('home')
+      setAdminRequests([])
+      setAdminStats({})
+    } catch (error) {
+      console.error('Erro no logout admin:', error)
+    }
+  }
+
+  const loadAdminData = async () => {
+    try {
+      // Carregar solicitações
+      const requestsResponse = await fetch(`${API_BASE_URL}/requests/list`, {
+        credentials: 'include'
+      })
+      const requestsData = await requestsResponse.json()
+      if (requestsData.success) {
+        setAdminRequests(requestsData.requests)
+      }
+
+      // Carregar estatísticas
+      const statsResponse = await fetch(`${API_BASE_URL}/requests/stats`, {
+        credentials: 'include'
+      })
+      const statsData = await statsResponse.json()
+      if (statsData.success) {
+        setAdminStats(statsData.stats)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados admin:', error)
+    }
+  }
+
+  const updateRequestStatus = async (requestId, newStatus, adminNotes = '') => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/requests/${requestId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          status: newStatus,
+          adminNotes: adminNotes
+        })
+      })
+      
+      const data = await response.json()
+      if (data.success) {
+        loadAdminData() // Recarregar dados
+        alert(`Solicitação ${newStatus === 'accepted' ? 'aceita' : 'negada'} com sucesso!`)
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error)
+      alert('Erro ao atualizar solicitação')
+    }
+  }
+
+  // Verificar status admin na inicialização
+  useEffect(() => {
+    checkAdminStatus()
+  }, [])
 
   // Simular obtenção de localização
   useEffect(() => {
@@ -144,11 +272,22 @@ function App() {
     }
 
     try {
-      // Enviar para interface web
+      // Enviar para a API do backend administrativo
+      const backendResponse = await fetch(`${API_BASE_URL}/requests/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      })
+      
+      const backendData = await backendResponse.json()
+      
+      // Também enviar para interface web (mantendo compatibilidade)
       const webResponse = await WebInterface.sendTowingRequest(requestData)
       
       const newRequest = {
-        id: webResponse.requestId || Date.now(),
+        id: backendData.requestId || webResponse.requestId || Date.now(),
         date: new Date().toLocaleString('pt-BR'),
         location,
         vehicleType,
@@ -157,7 +296,8 @@ function App() {
         isForThirdParty,
         thirdPartyName: isForThirdParty ? thirdPartyName : null,
         status: 'Solicitado',
-        webIntegration: true
+        webIntegration: true,
+        backendIntegration: backendData.success
       }
 
       const updatedHistory = [newRequest, ...requestHistory]
@@ -166,7 +306,7 @@ function App() {
       // Salvar histórico no localStorage baseado no deviceId
       localStorage.setItem(`guincho_history_${deviceId}`, JSON.stringify(updatedHistory))
       
-      alert('Solicitação de guincho enviada com sucesso! Nossa equipe entrará em contato em breve.\n\nDados também enviados para a interface web da empresa.')
+      alert('Solicitação de guincho enviada com sucesso! Nossa equipe entrará em contato em breve.\n\nDados enviados para o sistema administrativo.')
       
       // Limpar formulário
       setDescription('')
@@ -290,6 +430,19 @@ function App() {
             >
               <Phone className="mr-3 h-5 w-5" />
               Ligar Diretamente
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/10 border-white/20">
+          <CardContent className="p-4">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-white hover:bg-white/10"
+              onClick={() => setCurrentView(isAdminLoggedIn ? 'admin-panel' : 'admin-login')}
+            >
+              <Shield className="mr-3 h-5 w-5" />
+              {isAdminLoggedIn ? 'Painel Administrativo' : 'Acesso Administrativo'}
             </Button>
           </CardContent>
         </Card>
@@ -853,6 +1006,246 @@ function App() {
     </div>
   )
 
+  // Renderizar página de login administrativo
+  const renderAdminLogin = () => (
+    <div className="min-h-screen bg-gradient-to-br from-primary to-secondary p-6">
+      <div className="max-w-md mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="bg-white/20 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+            <Shield className="h-8 w-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-2">Acesso Administrativo</h1>
+          <p className="text-white/80">Entre com suas credenciais</p>
+        </div>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="admin-username">Usuário</Label>
+                <Input
+                  id="admin-username"
+                  type="text"
+                  value={adminUsername}
+                  onChange={(e) => setAdminUsername(e.target.value)}
+                  placeholder="Digite seu usuário"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="admin-password">Senha</Label>
+                <Input
+                  id="admin-password"
+                  type="password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  placeholder="Digite sua senha"
+                />
+              </div>
+
+              <div className="flex space-x-3">
+                <Button
+                  onClick={handleAdminLogin}
+                  className="flex-1 bg-primary hover:bg-primary/90"
+                  disabled={!adminUsername || !adminPassword}
+                >
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Entrar
+                </Button>
+                
+                <Button
+                  onClick={() => setCurrentView('home')}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+
+  // Renderizar painel administrativo
+  const renderAdminPanel = () => (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Painel Administrativo</h1>
+              <p className="text-gray-600">Gerencie as solicitações de guincho</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button
+                onClick={loadAdminData}
+                variant="outline"
+                size="sm"
+              >
+                Atualizar
+              </Button>
+              <Button
+                onClick={handleAdminLogout}
+                variant="outline"
+                size="sm"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sair
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Estatísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Clock className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Pendentes</p>
+                  <p className="text-2xl font-bold text-gray-900">{adminStats.pending || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Truck className="h-6 w-6 text-green-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Aceitas</p>
+                  <p className="text-2xl font-bold text-gray-900">{adminStats.accepted || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <User className="h-6 w-6 text-red-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Negadas</p>
+                  <p className="text-2xl font-bold text-gray-900">{adminStats.denied || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <History className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total</p>
+                  <p className="text-2xl font-bold text-gray-900">{adminStats.total || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Lista de solicitações */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Solicitações de Guincho</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {adminRequests.length === 0 ? (
+              <div className="text-center py-8">
+                <Truck className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-600">Nenhuma solicitação encontrada</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {adminRequests.map((request) => (
+                  <Card key={request.id} className="border-l-4 border-l-blue-500">
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              request.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                              request.status === 'denied' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {request.status === 'pending' ? 'Pendente' :
+                               request.status === 'accepted' ? 'Aceita' :
+                               request.status === 'denied' ? 'Negada' : 'Concluída'}
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              {new Date(request.timestamp).toLocaleString('pt-BR')}
+                            </span>
+                          </div>
+                          <h3 className="font-semibold text-lg">Solicitação #{request.id.slice(-8)}</h3>
+                        </div>
+                        
+                        {request.status === 'pending' && (
+                          <div className="flex space-x-2">
+                            <Button
+                              onClick={() => updateRequestStatus(request.id, 'accepted')}
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              Aceitar
+                            </Button>
+                            <Button
+                              onClick={() => updateRequestStatus(request.id, 'denied')}
+                              size="sm"
+                              variant="destructive"
+                            >
+                              Negar
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p><strong>Cliente:</strong> {request.client.cpf}</p>
+                          <p><strong>Telefone:</strong> {request.client.phone}</p>
+                          <p><strong>Localização:</strong> {request.location}</p>
+                        </div>
+                        <div>
+                          <p><strong>Veículo:</strong> {request.vehicle.type}</p>
+                          <p><strong>Descrição:</strong> {request.vehicle.description}</p>
+                          {request.thirdParty.isForThirdParty && (
+                            <p><strong>Para terceiro:</strong> {request.thirdParty.name}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {request.adminNotes && (
+                        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                          <p className="text-sm"><strong>Observações:</strong> {request.adminNotes}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+
   // Renderizar a view atual
   switch (currentView) {
     case 'request':
@@ -861,6 +1254,10 @@ function App() {
       return renderHistory()
     case 'vehicles':
       return renderVehicles()
+    case 'admin-login':
+      return renderAdminLogin()
+    case 'admin-panel':
+      return renderAdminPanel()
     default:
       return renderHome()
   }
