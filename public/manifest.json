@@ -1,6 +1,6 @@
 {
-  "name": "Guincho RS 24hrs",
-  "short_name": "RS",
+  "name": "Grupo RS - Guincho 24h",
+  "short_name": "RS Guincho",
   "description": "Aplicativo para solicitação de guincho 24 horas do Grupo RS Brasil",
   "start_url": "/",
   "display": "standalone",
