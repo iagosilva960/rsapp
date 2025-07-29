@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
+import { Checkbox } from '@/components/ui/checkbox.jsx'
 import { MapPin, Phone, Truck, Clock, User, Car, History, Wifi } from 'lucide-react'
 import { WebInterface } from './components/WebInterface.jsx'
 import './App.css'
@@ -19,6 +20,32 @@ function App() {
   const [phoneNumber, setPhoneNumber] = useState("")
   const [confirmPhoneNumber, setConfirmPhoneNumber] = useState("")
   const [deferredPrompt, setDeferredPrompt] = useState(null)
+  
+  // Novos campos para CPF e terceiros
+  const [clientCpf, setClientCpf] = useState("")
+  const [isForThirdParty, setIsForThirdParty] = useState(false)
+  const [thirdPartyName, setThirdPartyName] = useState("")
+  const [thirdPartyCpf, setThirdPartyCpf] = useState("")
+  const [thirdPartyPhone, setThirdPartyPhone] = useState("")
+
+  // Gerar identificador único do dispositivo (alternativa ao MAC Address)
+  const [deviceId, setDeviceId] = useState('')
+  
+  useEffect(() => {
+    // Gerar ou recuperar ID único do dispositivo
+    let storedDeviceId = localStorage.getItem('guincho_device_id')
+    if (!storedDeviceId) {
+      storedDeviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+      localStorage.setItem('guincho_device_id', storedDeviceId)
+    }
+    setDeviceId(storedDeviceId)
+    
+    // Carregar histórico do dispositivo
+    const storedHistory = localStorage.getItem(`guincho_history_${storedDeviceId}`)
+    if (storedHistory) {
+      setRequestHistory(JSON.parse(storedHistory))
+    }
+  }, [])
 
   useEffect(() => {
     window.addEventListener("beforeinstallprompt", (e) => {
@@ -61,7 +88,8 @@ function App() {
   }, [])
 
   const handleRequestTowing = async () => {
-    if (!location || !vehicleType || !description || !phoneNumber || !confirmPhoneNumber) {
+    // Validação dos campos obrigatórios
+    if (!location || !vehicleType || !description || !phoneNumber || !confirmPhoneNumber || !clientCpf) {
       alert("Por favor, preencha todos os campos obrigatórios.")
       return
     }
@@ -71,12 +99,24 @@ function App() {
       return
     }
 
+    // Validação para terceiros
+    if (isForThirdParty && (!thirdPartyName || !thirdPartyCpf || !thirdPartyPhone)) {
+      alert("Por favor, preencha todos os dados da pessoa para quem está solicitando o guincho.")
+      return
+    }
+
     const requestData = {
       location,
       vehicleType,
       description,
       phoneNumber,
+      clientCpf,
+      isForThirdParty,
+      thirdPartyName: isForThirdParty ? thirdPartyName : null,
+      thirdPartyCpf: isForThirdParty ? thirdPartyCpf : null,
+      thirdPartyPhone: isForThirdParty ? thirdPartyPhone : null,
       userLocation,
+      deviceId,
       timestamp: new Date().toISOString()
     }
 
@@ -90,16 +130,29 @@ function App() {
         location,
         vehicleType,
         description,
+        clientCpf,
+        isForThirdParty,
+        thirdPartyName: isForThirdParty ? thirdPartyName : null,
         status: 'Solicitado',
         webIntegration: true
       }
 
-      setRequestHistory([newRequest, ...requestHistory])
+      const updatedHistory = [newRequest, ...requestHistory]
+      setRequestHistory(updatedHistory)
+      
+      // Salvar histórico no localStorage baseado no deviceId
+      localStorage.setItem(`guincho_history_${deviceId}`, JSON.stringify(updatedHistory))
+      
       alert('Solicitação de guincho enviada com sucesso! Nossa equipe entrará em contato em breve.\n\nDados também enviados para a interface web da empresa.')
       
       // Limpar formulário
       setDescription('')
       setVehicleType('')
+      setClientCpf('')
+      setIsForThirdParty(false)
+      setThirdPartyName('')
+      setThirdPartyCpf('')
+      setThirdPartyPhone('')
       setCurrentView('home')
     } catch (error) {
       console.error('Erro ao enviar solicitação:', error)
@@ -264,7 +317,67 @@ function App() {
           </div>
 
           <div>
-            <Label htmlFor="phone-number">Telefone *</Label>
+            <Label htmlFor="client-cpf">Seu CPF *</Label>
+            <Input
+              id="client-cpf"
+              value={clientCpf}
+              onChange={(e) => setClientCpf(e.target.value)}
+              placeholder="000.000.000-00"
+              maxLength={14}
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="third-party" 
+              checked={isForThirdParty}
+              onCheckedChange={setIsForThirdParty}
+            />
+            <Label htmlFor="third-party" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              O guincho é para outra pessoa?
+            </Label>
+          </div>
+
+          {isForThirdParty && (
+            <div className="space-y-4 p-4 bg-blue-50 rounded-lg border">
+              <h3 className="font-semibold text-sm text-blue-800">Dados da pessoa para quem está solicitando:</h3>
+              
+              <div>
+                <Label htmlFor="third-party-name">Nome Completo *</Label>
+                <Input
+                  id="third-party-name"
+                  value={thirdPartyName}
+                  onChange={(e) => setThirdPartyName(e.target.value)}
+                  placeholder="Nome completo da pessoa"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="third-party-cpf">CPF *</Label>
+                <Input
+                  id="third-party-cpf"
+                  value={thirdPartyCpf}
+                  onChange={(e) => setThirdPartyCpf(e.target.value)}
+                  placeholder="000.000.000-00"
+                  maxLength={14}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="third-party-phone">Telefone *</Label>
+                <Input
+                  id="third-party-phone"
+                  type="tel"
+                  value={thirdPartyPhone}
+                  onChange={(e) => setThirdPartyPhone(e.target.value)}
+                  placeholder="(XX) XXXXX-XXXX"
+                />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <Label htmlFor="phone-number">Seu Telefone *</Label>
             <Input
               id="phone-number"
               type="tel"
@@ -359,6 +472,14 @@ function App() {
                 <p className="text-sm text-gray-600 mb-1">
                   <strong>Local:</strong> {request.location}
                 </p>
+                <p className="text-sm text-gray-600 mb-1">
+                  <strong>CPF:</strong> {request.clientCpf}
+                </p>
+                {request.isForThirdParty && (
+                  <p className="text-sm text-gray-600 mb-1">
+                    <strong>Para:</strong> {request.thirdPartyName}
+                  </p>
+                )}
                 <p className="text-sm text-gray-600">
                   <strong>Problema:</strong> {request.description}
                 </p>
