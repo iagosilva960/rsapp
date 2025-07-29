@@ -31,6 +31,18 @@ function App() {
   // Gerar identificador único do dispositivo (alternativa ao MAC Address)
   const [deviceId, setDeviceId] = useState('')
   
+  // Estados para gerenciamento de veículos
+  const [vehicles, setVehicles] = useState([])
+  const [showVehicleForm, setShowVehicleForm] = useState(false)
+  const [showRecoverData, setShowRecoverData] = useState(false)
+  const [vehicleCategory, setVehicleCategory] = useState('')
+  const [vehiclePlate, setVehiclePlate] = useState('')
+  const [confirmVehiclePlate, setConfirmVehiclePlate] = useState('')
+  const [vehicleOwnerName, setVehicleOwnerName] = useState('')
+  const [vehicleOwnerCpf, setVehicleOwnerCpf] = useState('')
+  const [recoverName, setRecoverName] = useState('')
+  const [recoverCpf, setRecoverCpf] = useState('')
+  
   useEffect(() => {
     // Gerar ou recuperar ID único do dispositivo
     let storedDeviceId = localStorage.getItem('guincho_device_id')
@@ -44,6 +56,12 @@ function App() {
     const storedHistory = localStorage.getItem(`guincho_history_${storedDeviceId}`)
     if (storedHistory) {
       setRequestHistory(JSON.parse(storedHistory))
+    }
+    
+    // Carregar veículos do dispositivo
+    const storedVehicles = localStorage.getItem(`guincho_vehicles_${storedDeviceId}`)
+    if (storedVehicles) {
+      setVehicles(JSON.parse(storedVehicles))
     }
   }, [])
 
@@ -493,6 +511,112 @@ function App() {
     </div>
   )
 
+  // Funções para gerenciamento de veículos
+  const handleVehicleSubmit = () => {
+    // Validação dos campos obrigatórios
+    if (!vehicleCategory || !vehiclePlate || !confirmVehiclePlate || !vehicleOwnerName || !vehicleOwnerCpf) {
+      alert("Por favor, preencha todos os campos obrigatórios.")
+      return
+    }
+
+    if (vehiclePlate !== confirmVehiclePlate) {
+      alert("As placas não coincidem. Por favor, verifique.")
+      return
+    }
+
+    // Verificar se a placa já existe
+    const plateExists = vehicles.some(vehicle => vehicle.plate.toLowerCase() === vehiclePlate.toLowerCase())
+    if (plateExists) {
+      alert("Um veículo com esta placa já está cadastrado.")
+      return
+    }
+
+    const newVehicle = {
+      id: Date.now(),
+      category: vehicleCategory,
+      plate: vehiclePlate.toUpperCase(),
+      ownerName: vehicleOwnerName,
+      ownerCpf: vehicleOwnerCpf,
+      deviceId: deviceId,
+      createdAt: new Date().toISOString()
+    }
+
+    const updatedVehicles = [...vehicles, newVehicle]
+    setVehicles(updatedVehicles)
+    
+    // Salvar no localStorage
+    localStorage.setItem(`guincho_vehicles_${deviceId}`, JSON.stringify(updatedVehicles))
+    
+    alert('Veículo cadastrado com sucesso!')
+    
+    // Limpar formulário
+    setVehicleCategory('')
+    setVehiclePlate('')
+    setConfirmVehiclePlate('')
+    setVehicleOwnerName('')
+    setVehicleOwnerCpf('')
+    setShowVehicleForm(false)
+  }
+
+  const handleRecoverData = () => {
+    if (!recoverName || !recoverCpf) {
+      alert("Por favor, preencha o nome completo e CPF.")
+      return
+    }
+
+    // Buscar em todos os dispositivos salvos no localStorage
+    const allKeys = Object.keys(localStorage)
+    const vehicleKeys = allKeys.filter(key => key.startsWith('guincho_vehicles_'))
+    
+    let foundVehicles = []
+    
+    vehicleKeys.forEach(key => {
+      try {
+        const vehiclesData = JSON.parse(localStorage.getItem(key))
+        if (vehiclesData && Array.isArray(vehiclesData)) {
+          const userVehicles = vehiclesData.filter(vehicle => 
+            vehicle.ownerName.toLowerCase() === recoverName.toLowerCase() && 
+            vehicle.ownerCpf === recoverCpf
+          )
+          foundVehicles = [...foundVehicles, ...userVehicles]
+        }
+      } catch (error) {
+        console.error('Erro ao recuperar dados:', error)
+      }
+    })
+
+    if (foundVehicles.length > 0) {
+      // Mesclar veículos encontrados com os atuais (evitar duplicatas)
+      const currentPlates = vehicles.map(v => v.plate)
+      const newVehicles = foundVehicles.filter(v => !currentPlates.includes(v.plate))
+      
+      if (newVehicles.length > 0) {
+        const updatedVehicles = [...vehicles, ...newVehicles]
+        setVehicles(updatedVehicles)
+        localStorage.setItem(`guincho_vehicles_${deviceId}`, JSON.stringify(updatedVehicles))
+        alert(`${newVehicles.length} veículo(s) recuperado(s) com sucesso!`)
+      } else {
+        alert('Todos os veículos já estão cadastrados neste dispositivo.')
+      }
+    } else {
+      alert('Nenhum veículo encontrado com os dados informados.')
+    }
+    
+    // Limpar formulário
+    setRecoverName('')
+    setRecoverCpf('')
+    setShowRecoverData(false)
+  }
+
+  const handleDeleteVehicle = (vehicleId) => {
+    if (confirm('Tem certeza que deseja excluir este veículo?')) {
+      const updatedVehicles = vehicles.filter(vehicle => vehicle.id !== vehicleId)
+      setVehicles(updatedVehicles)
+      localStorage.setItem(`guincho_vehicles_${deviceId}`, JSON.stringify(updatedVehicles))
+      alert('Veículo excluído com sucesso!')
+    }
+  }
+
   const renderVehicles = () => (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="mb-6">
@@ -506,15 +630,201 @@ function App() {
         <h1 className="text-2xl font-bold text-primary">Meus Veículos</h1>
       </div>
 
-      <Card>
-        <CardContent className="p-8 text-center">
-          <Car className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-600 mb-4">Funcionalidade em desenvolvimento</p>
-          <p className="text-sm text-gray-500">
-            Em breve você poderá cadastrar e gerenciar seus veículos
-          </p>
-        </CardContent>
-      </Card>
+      {/* Botões de ação */}
+      <div className="flex gap-3 mb-6">
+        <Button 
+          onClick={() => setShowVehicleForm(true)}
+          className="bg-secondary hover:bg-secondary/90 flex-1"
+        >
+          + Cadastrar Veículo
+        </Button>
+        <Button 
+          onClick={() => setShowRecoverData(true)}
+          variant="outline"
+          className="flex-1"
+        >
+          Recuperar Dados
+        </Button>
+      </div>
+
+      {/* Formulário de cadastro */}
+      {showVehicleForm && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Cadastrar Novo Veículo</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="vehicle-category">Categoria do Veículo *</Label>
+              <Select value={vehicleCategory} onValueChange={setVehicleCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="carro-pequeno">Carro Pequeno</SelectItem>
+                  <SelectItem value="carro-medio">Carro Médio</SelectItem>
+                  <SelectItem value="carro-grande">Carro Grande/SUV</SelectItem>
+                  <SelectItem value="caminhao">Caminhão</SelectItem>
+                  <SelectItem value="maquina">Máquina Pesada</SelectItem>
+                  <SelectItem value="motocicleta">Motocicleta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="vehicle-plate">Placa do Veículo *</Label>
+              <Input
+                id="vehicle-plate"
+                value={vehiclePlate}
+                onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())}
+                placeholder="ABC-1234"
+                maxLength={8}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="confirm-vehicle-plate">Confirmar Placa *</Label>
+              <Input
+                id="confirm-vehicle-plate"
+                value={confirmVehiclePlate}
+                onChange={(e) => setConfirmVehiclePlate(e.target.value.toUpperCase())}
+                placeholder="ABC-1234"
+                maxLength={8}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="vehicle-owner-name">Nome do Cliente *</Label>
+              <Input
+                id="vehicle-owner-name"
+                value={vehicleOwnerName}
+                onChange={(e) => setVehicleOwnerName(e.target.value)}
+                placeholder="Nome completo do proprietário"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="vehicle-owner-cpf">CPF do Cliente *</Label>
+              <Input
+                id="vehicle-owner-cpf"
+                value={vehicleOwnerCpf}
+                onChange={(e) => setVehicleOwnerCpf(e.target.value)}
+                placeholder="000.000.000-00"
+                maxLength={14}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                onClick={handleVehicleSubmit}
+                className="bg-secondary hover:bg-secondary/90 flex-1"
+              >
+                Salvar Veículo
+              </Button>
+              <Button 
+                onClick={() => setShowVehicleForm(false)}
+                variant="outline"
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Formulário de recuperação de dados */}
+      {showRecoverData && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Recuperar Dados</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Digite seu nome completo e CPF para recuperar seus veículos cadastrados em outros dispositivos.
+            </p>
+            
+            <div>
+              <Label htmlFor="recover-name">Nome Completo *</Label>
+              <Input
+                id="recover-name"
+                value={recoverName}
+                onChange={(e) => setRecoverName(e.target.value)}
+                placeholder="Nome completo"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="recover-cpf">CPF *</Label>
+              <Input
+                id="recover-cpf"
+                value={recoverCpf}
+                onChange={(e) => setRecoverCpf(e.target.value)}
+                placeholder="000.000.000-00"
+                maxLength={14}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                onClick={handleRecoverData}
+                className="bg-secondary hover:bg-secondary/90 flex-1"
+              >
+                Recuperar Dados
+              </Button>
+              <Button 
+                onClick={() => setShowRecoverData(false)}
+                variant="outline"
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Lista de veículos */}
+      {vehicles.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Car className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-600 mb-4">Nenhum veículo cadastrado</p>
+            <p className="text-sm text-gray-500">
+              Cadastre seus veículos para facilitar futuras solicitações de guincho
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {vehicles.map((vehicle) => (
+            <Card key={vehicle.id}>
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex items-center">
+                    <Car className="h-5 w-5 mr-2 text-primary" />
+                    <span className="font-semibold text-lg">{vehicle.plate}</span>
+                  </div>
+                  <Button
+                    onClick={() => handleDeleteVehicle(vehicle.id)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                  >
+                    Excluir
+                  </Button>
+                </div>
+                <div className="space-y-1 text-sm text-gray-600">
+                  <p><strong>Categoria:</strong> {vehicle.category}</p>
+                  <p><strong>Proprietário:</strong> {vehicle.ownerName}</p>
+                  <p><strong>CPF:</strong> {vehicle.ownerCpf}</p>
+                  <p><strong>Cadastrado em:</strong> {new Date(vehicle.createdAt).toLocaleDateString('pt-BR')}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 
