@@ -25,43 +25,6 @@ function App() {
   const [thirdPartyCpf, setThirdPartyCpf] = useState("")
   const [thirdPartyPhone, setThirdPartyPhone] = useState("")
   const [deferredPrompt, setDeferredPrompt] = useState(null)
-  const [deviceId, setDeviceId] = useState("")
-
-  // Função para gerar ID único do dispositivo
-  const generateDeviceId = () => {
-    return 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-  }
-
-  // Função para obter ou criar ID do dispositivo
-  const getOrCreateDeviceId = () => {
-    let storedDeviceId = localStorage.getItem('guincho_device_id')
-    if (!storedDeviceId) {
-      storedDeviceId = generateDeviceId()
-      localStorage.setItem('guincho_device_id', storedDeviceId)
-    }
-    return storedDeviceId
-  }
-
-  // Função para salvar histórico no localStorage
-  const saveHistoryToStorage = (history) => {
-    const deviceId = getOrCreateDeviceId()
-    localStorage.setItem(`guincho_history_${deviceId}`, JSON.stringify(history))
-  }
-
-  // Função para carregar histórico do localStorage
-  const loadHistoryFromStorage = () => {
-    const deviceId = getOrCreateDeviceId()
-    const storedHistory = localStorage.getItem(`guincho_history_${deviceId}`)
-    return storedHistory ? JSON.parse(storedHistory) : []
-  }
-
-  useEffect(() => {
-    // Inicializar ID do dispositivo e carregar histórico
-    const id = getOrCreateDeviceId()
-    setDeviceId(id)
-    const history = loadHistoryFromStorage()
-    setRequestHistory(history)
-  }, [])
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e) => {
@@ -167,20 +130,11 @@ function App() {
         location,
         vehicleType,
         description,
-        clientName,
-        clientCpf,
-        isForThirdParty,
-        thirdPartyName: isForThirdParty ? thirdPartyName : null,
-        thirdPartyCpf: isForThirdParty ? thirdPartyCpf : null,
-        thirdPartyPhone: isForThirdParty ? thirdPartyPhone : null,
         status: 'Solicitado',
-        webIntegration: true,
-        deviceId: getOrCreateDeviceId()
+        webIntegration: true
       }
 
-      const updatedHistory = [newRequest, ...requestHistory]
-      setRequestHistory(updatedHistory)
-      saveHistoryToStorage(updatedHistory)
+      setRequestHistory([newRequest, ...requestHistory])
       alert('Solicitação de guincho enviada com sucesso! Nossa equipe entrará em contato em breve.\n\nDados também enviados para a interface web da empresa.')
       
       // Limpar formulário
@@ -505,24 +459,13 @@ function App() {
                   <strong>Data:</strong> {request.date}
                 </p>
                 <p className="text-sm text-gray-600 mb-1">
-                  <strong>Cliente:</strong> {request.clientName}
-                </p>
-                {request.isForThirdParty && (
-                  <p className="text-sm text-gray-600 mb-1">
-                    <strong>Para:</strong> {request.thirdPartyName}
-                  </p>
-                )}
-                <p className="text-sm text-gray-600 mb-1">
                   <strong>Veículo:</strong> {request.vehicleType}
                 </p>
                 <p className="text-sm text-gray-600 mb-1">
                   <strong>Local:</strong> {request.location}
                 </p>
-                <p className="text-sm text-gray-600 mb-1">
+                <p className="text-sm text-gray-600">
                   <strong>Problema:</strong> {request.description}
-                </p>
-                <p className="text-xs text-gray-400 mt-2">
-                  <strong>ID do Dispositivo:</strong> {request.deviceId}
                 </p>
               </CardContent>
             </Card>

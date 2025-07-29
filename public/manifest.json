@@ -1,0 +1,27 @@
+{
+  "name": "Grupo RS - Guincho 24h",
+  "short_name": "RS Guincho",
+  "description": "Aplicativo para solicitação de guincho 24 horas do Grupo RS Brasil",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e3a8a",
+  "theme_color": "#1e3a8a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "business"],
+  "lang": "pt-BR"
+}
+
