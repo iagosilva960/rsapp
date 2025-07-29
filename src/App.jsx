@@ -48,10 +48,28 @@ function App() {
   }, [])
 
   useEffect(() => {
-    window.addEventListener("beforeinstallprompt", (e) => {
+    const handleBeforeInstallPrompt = (e) => {
       e.preventDefault()
       setDeferredPrompt(e)
-    })
+      // Exibir o prompt automaticamente se disponível
+      if (e) {
+        e.prompt()
+        e.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === "accepted") {
+            console.log("Usuário aceitou instalar o PWA automaticamente")
+          } else {
+            console.log("Usuário recusou instalar o PWA automaticamente")
+          }
+          setDeferredPrompt(null)
+        })
+      }
+    }
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
+    }
   }, [])
 
   const handleInstallPWA = () => {
@@ -196,16 +214,7 @@ function App() {
         </Button>
       </div>
 
-      {deferredPrompt && (
-        <div className="px-6 mb-6">
-          <Button 
-            onClick={handleInstallPWA}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-4 text-lg font-semibold"
-          >
-            Adicionar à Tela Inicial
-          </Button>
-        </div>
-      )}
+
 
       {/* Menu de opções */}
       <div className="px-6 space-y-3">
@@ -327,13 +336,13 @@ function App() {
             />
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 p-3 border border-black rounded-md bg-white">
             <Checkbox 
               id="third-party" 
               checked={isForThirdParty}
               onCheckedChange={setIsForThirdParty}
             />
-            <Label htmlFor="third-party" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <Label htmlFor="third-party" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-black">
               O guincho é para outra pessoa?
             </Label>
           </div>

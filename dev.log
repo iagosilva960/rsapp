@@ -2,30 +2,27 @@
 > guincho-rs@0.0.0 dev /home/ubuntu/rsapp
 > vite
 
-Port 5173 is in use, trying another one...
 
-  VITE v6.3.5  ready in 545 ms
+  VITE v6.3.5  ready in 495 ms
 
-  ➜  Local:   http://localhost:5174/
+  ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose
   ➜  press h + enter to show help
-10:22:23 AM [vite] (client) ✨ new dependencies optimized: @radix-ui/react-checkbox
-10:22:23 AM [vite] (client) ✨ optimized dependencies changed. reloading
 
-  #  Node.js[2591]: void node::ResetStdio() at ../src/node.cc:760
+  #  Node.js[3613]: void node::ResetStdio() at ../src/node.cc:760
   #  Assertion failed: !(err != 0) || (err == -1 && (*__errno_location ()) == 1)
 
 ----- Native stack trace -----
 
  1: 0xf95cf7 node::Assert(node::AssertionInfo const&) [node]
  2: 0xf42264  [node]
- 3: 0x7f6919a45495  [/lib/x86_64-linux-gnu/libc.so.6]
- 4: 0x7f6919a45610 on_exit [/lib/x86_64-linux-gnu/libc.so.6]
+ 3: 0x7fdde7645495  [/lib/x86_64-linux-gnu/libc.so.6]
+ 4: 0x7fdde7645610 on_exit [/lib/x86_64-linux-gnu/libc.so.6]
  5: 0xe98a4f node::DefaultProcessExitHandlerInternal(node::Environment*, node::ExitCode) [node]
  6: 0xf01e4f node::Environment::Exit(node::ExitCode) [node]
  7: 0x1d755e2  [node]
 
-  #  Node.js[2591]: void node::ResetStdio() at ../src/node.cc:760
+  #  Node.js[3613]: void node::ResetStdio() at ../src/node.cc:760
   #  Assertion failed: !(err != 0) || (err == -1 && (*__errno_location ()) == 1)
 
 ----- Native stack trace -----
@@ -33,20 +30,20 @@ Port 5173 is in use, trying another one...
 Segmentation fault
  ELIFECYCLE  Command failed with exit code 139.
 
-  #  Node.js[2579]: void node::ResetStdio() at ../src/node.cc:760
+  #  Node.js[3601]: void node::ResetStdio() at ../src/node.cc:760
   #  Assertion failed: !(err != 0) || (err == -1 && (*__errno_location ()) == 1)
 
 ----- Native stack trace -----
 
  1: 0xf95cf7 node::Assert(node::AssertionInfo const&) [node]
  2: 0xf42264  [node]
- 3: 0x7f5520c45495  [/lib/x86_64-linux-gnu/libc.so.6]
- 4: 0x7f5520c45610 on_exit [/lib/x86_64-linux-gnu/libc.so.6]
+ 3: 0x7f1779845495  [/lib/x86_64-linux-gnu/libc.so.6]
+ 4: 0x7f1779845610 on_exit [/lib/x86_64-linux-gnu/libc.so.6]
  5: 0xe98a4f node::DefaultProcessExitHandlerInternal(node::Environment*, node::ExitCode) [node]
  6: 0xf01e4f node::Environment::Exit(node::ExitCode) [node]
  7: 0x1d755e2  [node]
 
-  #  Node.js[2579]: void node::ResetStdio() at ../src/node.cc:760
+  #  Node.js[3601]: void node::ResetStdio() at ../src/node.cc:760
   #  Assertion failed: !(err != 0) || (err == -1 && (*__errno_location ()) == 1)
 
 ----- Native stack trace -----
@@ -54,22 +51,22 @@ Segmentation fault
  1: 0xf95cf7 node::Assert(node::AssertionInfo const&) [node]
  2: 0xf42264  [node]
  3: 0xf42982 node::TrapWebAssemblyOrContinue(int, siginfo_t*, void*) [node]
- 4: 0x7f5520c42520  [/lib/x86_64-linux-gnu/libc.so.6]
+ 4: 0x7f1779842520  [/lib/x86_64-linux-gnu/libc.so.6]
 
-  #  Node.js[2568]: void node::ResetStdio() at ../src/node.cc:760
+  #  Node.js[3590]: void node::ResetStdio() at ../src/node.cc:760
   #  Assertion failed: !(err != 0) || (err == -1 && (*__errno_location ()) == 1)
 
 ----- Native stack trace -----
 
  1: 0xf95cf7 node::Assert(node::AssertionInfo const&) [node]
  2: 0xf42264  [node]
- 3: 0x7f3b6da45495  [/lib/x86_64-linux-gnu/libc.so.6]
- 4: 0x7f3b6da45610 on_exit [/lib/x86_64-linux-gnu/libc.so.6]
+ 3: 0x7fe1a8645495  [/lib/x86_64-linux-gnu/libc.so.6]
+ 4: 0x7fe1a8645610 on_exit [/lib/x86_64-linux-gnu/libc.so.6]
  5: 0xe98a4f node::DefaultProcessExitHandlerInternal(node::Environment*, node::ExitCode) [node]
  6: 0xf01e4f node::Environment::Exit(node::ExitCode) [node]
  7: 0x1d755e2  [node]
 
-  #  Node.js[2568]: void node::ResetStdio() at ../src/node.cc:760
+  #  Node.js[3590]: void node::ResetStdio() at ../src/node.cc:760
   #  Assertion failed: !(err != 0) || (err == -1 && (*__errno_location ()) == 1)
 
 ----- Native stack trace -----
@@ -77,4 +74,4 @@ Segmentation fault
  1: 0xf95cf7 node::Assert(node::AssertionInfo const&) [node]
  2: 0xf42264  [node]
  3: 0xf42982 node::TrapWebAssemblyOrContinue(int, siginfo_t*, void*) [node]
- 4: 0x7f3b6da42520  [/lib/x86_64-linux-gnu/libc.so.6]
+ 4: 0x7fe1a8642520  [/lib/x86_64-linux-gnu/libc.so.6]
