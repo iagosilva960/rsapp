@@ -48,28 +48,10 @@ function App() {
   }, [])
 
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
+    window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault()
       setDeferredPrompt(e)
-      // Exibir o prompt automaticamente se disponível
-      if (e) {
-        e.prompt()
-        e.userChoice.then((choiceResult) => {
-          if (choiceResult.outcome === "accepted") {
-            console.log("Usuário aceitou instalar o PWA automaticamente")
-          } else {
-            console.log("Usuário recusou instalar o PWA automaticamente")
-          }
-          setDeferredPrompt(null)
-        })
-      }
-    }
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
-    }
+    })
   }, [])
 
   const handleInstallPWA = () => {
@@ -213,6 +195,17 @@ function App() {
           Solicitar Guincho
         </Button>
       </div>
+
+      {deferredPrompt && (
+        <div className="px-6 mb-6">
+          <Button 
+            onClick={handleInstallPWA}
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-4 text-lg font-semibold"
+          >
+            Adicionar à Tela Inicial
+          </Button>
+        </div>
+      )}
 
 
 

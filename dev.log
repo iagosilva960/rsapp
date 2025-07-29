@@ -3,47 +3,27 @@
 > vite
 
 
-  VITE v6.3.5  ready in 495 ms
+  VITE v6.3.5  ready in 534 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose
   ➜  press h + enter to show help
+ ELIFECYCLE  Command failed.
 
-  #  Node.js[3613]: void node::ResetStdio() at ../src/node.cc:760
+  #  Node.js[4128]: void node::ResetStdio() at ../src/node.cc:760
   #  Assertion failed: !(err != 0) || (err == -1 && (*__errno_location ()) == 1)
 
 ----- Native stack trace -----
 
  1: 0xf95cf7 node::Assert(node::AssertionInfo const&) [node]
  2: 0xf42264  [node]
- 3: 0x7fdde7645495  [/lib/x86_64-linux-gnu/libc.so.6]
- 4: 0x7fdde7645610 on_exit [/lib/x86_64-linux-gnu/libc.so.6]
+ 3: 0x7fa0ca645495  [/lib/x86_64-linux-gnu/libc.so.6]
+ 4: 0x7fa0ca645610 on_exit [/lib/x86_64-linux-gnu/libc.so.6]
  5: 0xe98a4f node::DefaultProcessExitHandlerInternal(node::Environment*, node::ExitCode) [node]
  6: 0xf01e4f node::Environment::Exit(node::ExitCode) [node]
  7: 0x1d755e2  [node]
 
-  #  Node.js[3613]: void node::ResetStdio() at ../src/node.cc:760
-  #  Assertion failed: !(err != 0) || (err == -1 && (*__errno_location ()) == 1)
-
------ Native stack trace -----
-
-Segmentation fault
- ELIFECYCLE  Command failed with exit code 139.
-
-  #  Node.js[3601]: void node::ResetStdio() at ../src/node.cc:760
-  #  Assertion failed: !(err != 0) || (err == -1 && (*__errno_location ()) == 1)
-
------ Native stack trace -----
-
- 1: 0xf95cf7 node::Assert(node::AssertionInfo const&) [node]
- 2: 0xf42264  [node]
- 3: 0x7f1779845495  [/lib/x86_64-linux-gnu/libc.so.6]
- 4: 0x7f1779845610 on_exit [/lib/x86_64-linux-gnu/libc.so.6]
- 5: 0xe98a4f node::DefaultProcessExitHandlerInternal(node::Environment*, node::ExitCode) [node]
- 6: 0xf01e4f node::Environment::Exit(node::ExitCode) [node]
- 7: 0x1d755e2  [node]
-
-  #  Node.js[3601]: void node::ResetStdio() at ../src/node.cc:760
+  #  Node.js[4128]: void node::ResetStdio() at ../src/node.cc:760
   #  Assertion failed: !(err != 0) || (err == -1 && (*__errno_location ()) == 1)
 
 ----- Native stack trace -----
@@ -51,27 +31,4 @@ Segmentation fault
  1: 0xf95cf7 node::Assert(node::AssertionInfo const&) [node]
  2: 0xf42264  [node]
  3: 0xf42982 node::TrapWebAssemblyOrContinue(int, siginfo_t*, void*) [node]
- 4: 0x7f1779842520  [/lib/x86_64-linux-gnu/libc.so.6]
-
-  #  Node.js[3590]: void node::ResetStdio() at ../src/node.cc:760
-  #  Assertion failed: !(err != 0) || (err == -1 && (*__errno_location ()) == 1)
-
------ Native stack trace -----
-
- 1: 0xf95cf7 node::Assert(node::AssertionInfo const&) [node]
- 2: 0xf42264  [node]
- 3: 0x7fe1a8645495  [/lib/x86_64-linux-gnu/libc.so.6]
- 4: 0x7fe1a8645610 on_exit [/lib/x86_64-linux-gnu/libc.so.6]
- 5: 0xe98a4f node::DefaultProcessExitHandlerInternal(node::Environment*, node::ExitCode) [node]
- 6: 0xf01e4f node::Environment::Exit(node::ExitCode) [node]
- 7: 0x1d755e2  [node]
-
-  #  Node.js[3590]: void node::ResetStdio() at ../src/node.cc:760
-  #  Assertion failed: !(err != 0) || (err == -1 && (*__errno_location ()) == 1)
-
------ Native stack trace -----
-
- 1: 0xf95cf7 node::Assert(node::AssertionInfo const&) [node]
- 2: 0xf42264  [node]
- 3: 0xf42982 node::TrapWebAssemblyOrContinue(int, siginfo_t*, void*) [node]
- 4: 0x7fe1a8642520  [/lib/x86_64-linux-gnu/libc.so.6]
+ 4: 0x7fa0ca642520  [/lib/x86_64-linux-gnu/libc.so.6]
