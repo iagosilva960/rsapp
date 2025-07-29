@@ -164,11 +164,11 @@ function App() {
     <div className="min-h-screen bg-primary text-white">
       {/* Header */}
       <div className="p-6 text-center">
+        <h1 className="text-2xl font-bold mb-2">GRUPO</h1>
         <div className="flex items-center justify-center mb-4">
-          <div className="bg-secondary rounded-full p-3 mr-3">
+          <div className="bg-secondary rounded-full p-3">
             <span className="text-white font-bold text-xl">RS</span>
           </div>
-          <h1 className="text-2xl font-bold">GRUPO</h1>
         </div>
         <h2 className="text-3xl font-bold mb-2">Guincho 24h</h2>
         <p className="text-blue-200">Socorro rápido e confiável</p>
@@ -202,7 +202,7 @@ function App() {
             onClick={handleInstallPWA}
             className="w-full bg-blue-500 hover:bg-blue-600 text-white py-4 text-lg font-semibold"
           >
-            Adicionar à Tela Inicial
+            Baixar Aplicativo
           </Button>
         </div>
       )}
