@@ -16,6 +16,30 @@ function App() {
   const [description, setDescription] = useState('')
   const [userLocation, setUserLocation] = useState(null)
   const [requestHistory, setRequestHistory] = useState([])
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [confirmPhoneNumber, setConfirmPhoneNumber] = useState("")
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
+
+  useEffect(() => {
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+    })
+  }, [])
+
+  const handleInstallPWA = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt()
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === "accepted") {
+          console.log("Usuário aceitou instalar o PWA")
+        } else {
+          console.log("Usuário recusou instalar o PWA")
+        }
+        setDeferredPrompt(null)
+      })
+    }
+  }
 
   // Simular obtenção de localização
   useEffect(() => {
@@ -37,8 +61,13 @@ function App() {
   }, [])
 
   const handleRequestTowing = async () => {
-    if (!location || !vehicleType || !description) {
-      alert('Por favor, preencha todos os campos obrigatórios.')
+    if (!location || !vehicleType || !description || !phoneNumber || !confirmPhoneNumber) {
+      alert("Por favor, preencha todos os campos obrigatórios.")
+      return
+    }
+
+    if (phoneNumber !== confirmPhoneNumber) {
+      alert("Os números de telefone não coincidem. Por favor, verifique.")
       return
     }
 
@@ -46,6 +75,7 @@ function App() {
       location,
       vehicleType,
       description,
+      phoneNumber,
       userLocation,
       timestamp: new Date().toISOString()
     }
@@ -105,13 +135,24 @@ function App() {
       {/* Botão principal */}
       <div className="px-6 mb-6">
         <Button 
-          onClick={() => setCurrentView('request')}
+          onClick={() => setCurrentView("request")}
           className="w-full bg-secondary hover:bg-secondary/90 text-white py-4 text-lg font-semibold"
         >
           <Truck className="mr-2 h-5 w-5" />
           Solicitar Guincho
         </Button>
       </div>
+
+      {deferredPrompt && (
+        <div className="px-6 mb-6">
+          <Button 
+            onClick={handleInstallPWA}
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-4 text-lg font-semibold"
+          >
+            Adicionar à Tela Inicial
+          </Button>
+        </div>
+      )}
 
       {/* Menu de opções */}
       <div className="px-6 space-y-3">
@@ -219,6 +260,28 @@ function App() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Descreva o problema (ex: pane elétrica, pneu furado, acidente, etc.)"
               rows={4}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="phone-number">Telefone *</Label>
+            <Input
+              id="phone-number"
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="(XX) XXXXX-XXXX"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="confirm-phone-number">Confirmar Telefone *</Label>
+            <Input
+              id="confirm-phone-number"
+              type="tel"
+              value={confirmPhoneNumber}
+              onChange={(e) => setConfirmPhoneNumber(e.target.value)}
+              placeholder="(XX) XXXXX-XXXX"
             />
           </div>
 
