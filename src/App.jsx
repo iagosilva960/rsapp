@@ -52,8 +52,8 @@ function App() {
   
   // URL da API do backend
   const API_BASE_URL = process.env.NODE_ENV === 'production' 
-    ? '/api'  // Em produção, usar caminho relativo
-    : 'http://localhost:5000/api'  // Em desenvolvimento, usar localhost
+    ? 'https://5001-ik9x4bjdzib7oepl84fmo-9f8867ac.manus.computer/api'  // URL exposta do backend
+    : 'http://localhost:5001/api'  // Em desenvolvimento, usar localhost na porta 5001
   
   useEffect(() => {
     // Gerar ou recuperar ID único do dispositivo
@@ -170,22 +170,18 @@ function App() {
   const loadAdminData = async () => {
     try {
       // Carregar solicitações
-      const requestsResponse = await fetch(`${API_BASE_URL}/requests/list`, {
+      const requestsResponse = await fetch(`${API_BASE_URL}/admin/requests`, {
         credentials: 'include'
       })
       const requestsData = await requestsResponse.json()
-      if (requestsData.success) {
-        setAdminRequests(requestsData.requests)
-      }
+      setAdminRequests(requestsData)
 
       // Carregar estatísticas
-      const statsResponse = await fetch(`${API_BASE_URL}/requests/stats`, {
+      const statsResponse = await fetch(`${API_BASE_URL}/admin/stats`, {
         credentials: 'include'
       })
       const statsData = await statsResponse.json()
-      if (statsData.success) {
-        setAdminStats(statsData.stats)
-      }
+      setAdminStats(statsData)
     } catch (error) {
       console.error('Erro ao carregar dados admin:', error)
     }
@@ -193,7 +189,7 @@ function App() {
 
   const updateRequestStatus = async (requestId, newStatus, adminNotes = '') => {
     try {
-      const response = await fetch(`${API_BASE_URL}/requests/${requestId}/status`, {
+      const response = await fetch(`${API_BASE_URL}/admin/requests/${requestId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -209,6 +205,8 @@ function App() {
       if (data.success) {
         loadAdminData() // Recarregar dados
         alert(`Solicitação ${newStatus === 'accepted' ? 'aceita' : 'negada'} com sucesso!`)
+      } else {
+        alert('Erro ao atualizar status da solicitação')
       }
     } catch (error) {
       console.error('Erro ao atualizar status:', error)
@@ -275,7 +273,7 @@ function App() {
 
     try {
       // Enviar para a API do backend administrativo
-      const backendResponse = await fetch(`${API_BASE_URL}/requests/submit`, {
+      const backendResponse = await fetch(`${API_BASE_URL}/requests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -289,7 +287,7 @@ function App() {
       const webResponse = await WebInterface.sendTowingRequest(requestData)
       
       const newRequest = {
-        id: backendData.requestId || webResponse.requestId || Date.now(),
+        id: backendData.id || webResponse.requestId || Date.now(),
         date: new Date().toLocaleString('pt-BR'),
         location,
         vehicleType,
@@ -481,89 +479,94 @@ function App() {
               id="location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="Digite o endereço ou use a localização atual"
+              placeholder="Ex: Rua Principal, 123"
             />
           </div>
-
           <div>
-            <Label htmlFor="vehicle-type">Tipo de Veículo *</Label>
+            <Label htmlFor="vehicleType">Tipo de Veículo *</Label>
             <Select value={vehicleType} onValueChange={setVehicleType}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo de veículo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="carro-pequeno">Carro Pequeno</SelectItem>
-                <SelectItem value="carro-medio">Carro Médio</SelectItem>
-                <SelectItem value="carro-grande">Carro Grande/SUV</SelectItem>
+                <SelectItem value="carro">Carro</SelectItem>
+                <SelectItem value="moto">Moto</SelectItem>
                 <SelectItem value="caminhao">Caminhão</SelectItem>
-                <SelectItem value="maquina">Máquina Pesada</SelectItem>
-                <SelectItem value="motocicleta">Motocicleta</SelectItem>
+                <SelectItem value="outro">Outro</SelectItem>
               </SelectContent>
             </Select>
           </div>
-
           <div>
             <Label htmlFor="description">Descrição do Problema *</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descreva o problema (ex: pane elétrica, pneu furado, acidente, etc.)"
-              rows={4}
+              placeholder="Ex: Pneu furado, pane elétrica, etc."
             />
           </div>
-
           <div>
-            <Label htmlFor="client-cpf">Seu CPF *</Label>
+            <Label htmlFor="phoneNumber">Número de Telefone *</Label>
             <Input
-              id="client-cpf"
+              id="phoneNumber"
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="(XX) XXXXX-XXXX"
+            />
+          </div>
+          <div>
+            <Label htmlFor="confirmPhoneNumber">Confirmar Telefone *</Label>
+            <Input
+              id="confirmPhoneNumber"
+              type="tel"
+              value={confirmPhoneNumber}
+              onChange={(e) => setConfirmPhoneNumber(e.target.value)}
+              placeholder="(XX) XXXXX-XXXX"
+            />
+          </div>
+          <div>
+            <Label htmlFor="clientCpf">CPF do Solicitante *</Label>
+            <Input
+              id="clientCpf"
               value={clientCpf}
               onChange={(e) => setClientCpf(e.target.value)}
-              placeholder="000.000.000-00"
-              maxLength={14}
+              placeholder="XXX.XXX.XXX-XX"
             />
           </div>
-
-          <div className="flex items-center space-x-2 p-3 border border-black rounded-md bg-white">
-            <Checkbox 
-              id="third-party" 
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="isForThirdParty"
               checked={isForThirdParty}
               onCheckedChange={setIsForThirdParty}
             />
-            <Label htmlFor="third-party" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-black">
-              O guincho é para outra pessoa?
-            </Label>
+            <Label htmlFor="isForThirdParty">Solicitar para outra pessoa?</Label>
           </div>
-
           {isForThirdParty && (
-            <div className="space-y-4 p-4 bg-blue-50 rounded-lg border">
-              <h3 className="font-semibold text-sm text-blue-800">Dados da pessoa para quem está solicitando:</h3>
-              
+            <div className="space-y-4 border p-4 rounded-md">
+              <h3 className="font-semibold">Dados da Outra Pessoa</h3>
               <div>
-                <Label htmlFor="third-party-name">Nome Completo *</Label>
+                <Label htmlFor="thirdPartyName">Nome Completo *</Label>
                 <Input
-                  id="third-party-name"
+                  id="thirdPartyName"
                   value={thirdPartyName}
                   onChange={(e) => setThirdPartyName(e.target.value)}
-                  placeholder="Nome completo da pessoa"
+                  placeholder="Nome Completo"
                 />
               </div>
-
               <div>
-                <Label htmlFor="third-party-cpf">CPF *</Label>
+                <Label htmlFor="thirdPartyCpf">CPF *</Label>
                 <Input
-                  id="third-party-cpf"
+                  id="thirdPartyCpf"
                   value={thirdPartyCpf}
                   onChange={(e) => setThirdPartyCpf(e.target.value)}
-                  placeholder="000.000.000-00"
-                  maxLength={14}
+                  placeholder="XXX.XXX.XXX-XX"
                 />
               </div>
-
               <div>
-                <Label htmlFor="third-party-phone">Telefone *</Label>
+                <Label htmlFor="thirdPartyPhone">Telefone *</Label>
                 <Input
-                  id="third-party-phone"
+                  id="thirdPartyPhone"
                   type="tel"
                   value={thirdPartyPhone}
                   onChange={(e) => setThirdPartyPhone(e.target.value)}
@@ -572,47 +575,9 @@ function App() {
               </div>
             </div>
           )}
-
-          <div>
-            <Label htmlFor="phone-number">Seu Telefone *</Label>
-            <Input
-              id="phone-number"
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="(XX) XXXXX-XXXX"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="confirm-phone-number">Confirmar Telefone *</Label>
-            <Input
-              id="confirm-phone-number"
-              type="tel"
-              value={confirmPhoneNumber}
-              onChange={(e) => setConfirmPhoneNumber(e.target.value)}
-              placeholder="(XX) XXXXX-XXXX"
-            />
-          </div>
-
-          <Button 
-            onClick={handleRequestTowing}
-            className="w-full bg-secondary hover:bg-secondary/90"
-          >
-            Confirmar Solicitação
+          <Button onClick={handleRequestTowing} className="w-full">
+            Enviar Solicitação
           </Button>
-        </CardContent>
-      </Card>
-
-      <Card className="mt-6 bg-blue-50">
-        <CardContent className="p-4">
-          <div className="flex items-center text-primary">
-            <Clock className="mr-2 h-5 w-5" />
-            <span className="font-semibold">Atendimento 24 horas</span>
-          </div>
-          <p className="text-sm text-gray-600 mt-2">
-            Nossa equipe está disponível 24 horas por dia, 7 dias por semana para atendê-lo.
-          </p>
         </CardContent>
       </Card>
     </div>
@@ -632,54 +597,16 @@ function App() {
       </div>
 
       {requestHistory.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <History className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600">Nenhuma solicitação encontrada</p>
-            <p className="text-sm text-gray-500 mt-2">
-              Suas solicitações de guincho aparecerão aqui
-            </p>
-          </CardContent>
-        </Card>
+        <p>Nenhuma solicitação encontrada.</p>
       ) : (
         <div className="space-y-4">
           {requestHistory.map((request) => (
             <Card key={request.id}>
               <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="font-semibold">#{request.id}</span>
-                  <div className="flex gap-2">
-                    <span className="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                      {request.status}
-                    </span>
-                    {request.webIntegration && (
-                      <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded flex items-center">
-                        <Wifi className="h-3 w-3 mr-1" />
-                        Web
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 mb-1">
-                  <strong>Data:</strong> {request.date}
-                </p>
-                <p className="text-sm text-gray-600 mb-1">
-                  <strong>Veículo:</strong> {request.vehicleType}
-                </p>
-                <p className="text-sm text-gray-600 mb-1">
-                  <strong>Local:</strong> {request.location}
-                </p>
-                <p className="text-sm text-gray-600 mb-1">
-                  <strong>CPF:</strong> {request.clientCpf}
-                </p>
-                {request.isForThirdParty && (
-                  <p className="text-sm text-gray-600 mb-1">
-                    <strong>Para:</strong> {request.thirdPartyName}
-                  </p>
-                )}
-                <p className="text-sm text-gray-600">
-                  <strong>Problema:</strong> {request.description}
-                </p>
+                <p className="text-sm text-gray-500">{request.date}</p>
+                <p className="font-semibold">Localização: {request.location}</p>
+                <p>Veículo: {request.vehicleType}</p>
+                <p>Status: {request.status}</p>
               </CardContent>
             </Card>
           ))}
@@ -687,111 +614,6 @@ function App() {
       )}
     </div>
   )
-
-  // Funções para gerenciamento de veículos
-  const handleVehicleSubmit = () => {
-    // Validação dos campos obrigatórios
-    if (!vehicleCategory || !vehiclePlate || !confirmVehiclePlate || !vehicleOwnerName || !vehicleOwnerCpf) {
-      alert("Por favor, preencha todos os campos obrigatórios.")
-      return
-    }
-
-    if (vehiclePlate !== confirmVehiclePlate) {
-      alert("As placas não coincidem. Por favor, verifique.")
-      return
-    }
-
-    // Verificar se a placa já existe
-    const plateExists = vehicles.some(vehicle => vehicle.plate.toLowerCase() === vehiclePlate.toLowerCase())
-    if (plateExists) {
-      alert("Um veículo com esta placa já está cadastrado.")
-      return
-    }
-
-    const newVehicle = {
-      id: Date.now(),
-      category: vehicleCategory,
-      plate: vehiclePlate.toUpperCase(),
-      ownerName: vehicleOwnerName,
-      ownerCpf: vehicleOwnerCpf,
-      deviceId: deviceId,
-      createdAt: new Date().toISOString()
-    }
-
-    const updatedVehicles = [...vehicles, newVehicle]
-    setVehicles(updatedVehicles)
-    
-    // Salvar no localStorage
-    localStorage.setItem(`guincho_vehicles_${deviceId}`, JSON.stringify(updatedVehicles))
-    
-    alert('Veículo cadastrado com sucesso!')
-    
-    // Limpar formulário
-    setVehicleCategory('')
-    setVehiclePlate('')
-    setConfirmVehiclePlate('')
-    setVehicleOwnerName('')
-    setVehicleOwnerCpf('')
-    setShowVehicleForm(false)
-  }
-
-  const handleRecoverData = () => {
-    if (!recoverName || !recoverCpf) {
-      alert("Por favor, preencha o nome completo e CPF.")
-      return
-    }
-
-    // Buscar em todos os dispositivos salvos no localStorage
-    const allKeys = Object.keys(localStorage)
-    const vehicleKeys = allKeys.filter(key => key.startsWith("guincho_vehicles_"))    
-    let foundVehicles = []
-    
-    vehicleKeys.forEach(key => {
-      try {
-        const vehiclesData = JSON.parse(localStorage.getItem(key))
-        if (vehiclesData && Array.isArray(vehiclesData)) {
-          const userVehicles = vehiclesData.filter(vehicle => 
-            vehicle.ownerName.toLowerCase() === recoverName.toLowerCase() && 
-            vehicle.ownerCpf === recoverCpf
-          )
-          foundVehicles = [...foundVehicles, ...userVehicles]
-        }
-      } catch (error) {
-        console.error('Erro ao recuperar dados:', error)
-      }
-    })
-
-    if (foundVehicles.length > 0) {
-      // Mesclar veículos encontrados com os atuais (evitar duplicatas)
-      const currentPlates = vehicles.map(v => v.plate)
-      const newVehicles = foundVehicles.filter(v => !currentPlates.includes(v.plate))
-      
-      if (newVehicles.length > 0) {
-        const updatedVehicles = [...vehicles, ...newVehicles]
-        setVehicles(updatedVehicles)
-        localStorage.setItem(`guincho_vehicles_${deviceId}`, JSON.stringify(updatedVehicles))
-        alert(`${newVehicles.length} veículo(s) recuperado(s) com sucesso!`)
-      } else {
-        alert('Todos os veículos já estão cadastrados neste dispositivo.')
-      }
-    } else {
-      alert('Nenhum veículo encontrado com os dados informados.')
-    }
-    
-    // Limpar formulário
-    setRecoverName('')
-    setRecoverCpf('')
-    setShowRecoverData(false)
-  }
-
-  const handleDeleteVehicle = (vehicleId) => {
-    if (confirm('Tem certeza que deseja excluir este veículo?')) {
-      const updatedVehicles = vehicles.filter(vehicle => vehicle.id !== vehicleId)
-      setVehicles(updatedVehicles)
-      localStorage.setItem(`guincho_vehicles_${deviceId}`, JSON.stringify(updatedVehicles))
-      alert('Veículo excluído com sucesso!')
-    }
-  }
 
   const renderVehicles = () => (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -806,460 +628,303 @@ function App() {
         <h1 className="text-2xl font-bold text-primary">Meus Veículos</h1>
       </div>
 
-      {/* Botões de ação */}
-      <div className="flex gap-3 mb-6">
-        <Button 
-          onClick={() => setShowVehicleForm(true)}
-          className="bg-secondary hover:bg-secondary/90 flex-1"
-        >
-          + Cadastrar Veículo
-        </Button>
-        <Button 
-          onClick={() => setShowRecoverData(true)}
-          variant="outline"
-          className="flex-1"
-        >
-          Recuperar Dados
-        </Button>
-      </div>
+      <Button onClick={() => setShowVehicleForm(!showVehicleForm)} className="w-full mb-4">
+        {showVehicleForm ? 'Cancelar' : 'Adicionar Novo Veículo'}
+      </Button>
 
-      {/* Formulário de cadastro */}
       {showVehicleForm && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Cadastrar Novo Veículo</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Card className="mb-4">
+          <CardContent className="p-4 space-y-4">
+            <h3 className="font-semibold">Adicionar Veículo</h3>
             <div>
-              <Label htmlFor="vehicle-category">Categoria do Veículo *</Label>
+              <Label htmlFor="vehicleCategory">Categoria do Veículo</Label>
               <Select value={vehicleCategory} onValueChange={setVehicleCategory}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="carro-pequeno">Carro Pequeno</SelectItem>
-                  <SelectItem value="carro-medio">Carro Médio</SelectItem>
-                  <SelectItem value="carro-grande">Carro Grande/SUV</SelectItem>
+                  <SelectItem value="carro">Carro</SelectItem>
+                  <SelectItem value="moto">Moto</SelectItem>
                   <SelectItem value="caminhao">Caminhão</SelectItem>
-                  <SelectItem value="maquina">Máquina Pesada</SelectItem>
-                  <SelectItem value="motocicleta">Motocicleta</SelectItem>
+                  <SelectItem value="outro">Outro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
             <div>
-              <Label htmlFor="vehicle-plate">Placa do Veículo *</Label>
+              <Label htmlFor="vehiclePlate">Placa do Veículo</Label>
               <Input
-                id="vehicle-plate"
+                id="vehiclePlate"
                 value={vehiclePlate}
-                onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())}
+                onChange={(e) => setVehiclePlate(e.target.value)}
                 placeholder="ABC-1234"
-                maxLength={8}
               />
             </div>
-
             <div>
-              <Label htmlFor="confirm-vehicle-plate">Confirmar Placa *</Label>
+              <Label htmlFor="confirmVehiclePlate">Confirmar Placa</Label>
               <Input
-                id="confirm-vehicle-plate"
+                id="confirmVehiclePlate"
                 value={confirmVehiclePlate}
-                onChange={(e) => setConfirmVehiclePlate(e.target.value.toUpperCase())}
+                onChange={(e) => setConfirmVehiclePlate(e.target.value)}
                 placeholder="ABC-1234"
-                maxLength={8}
               />
             </div>
-
             <div>
-              <Label htmlFor="vehicle-owner-name">Nome do Cliente *</Label>
+              <Label htmlFor="vehicleOwnerName">Nome do Proprietário</Label>
               <Input
-                id="vehicle-owner-name"
+                id="vehicleOwnerName"
                 value={vehicleOwnerName}
                 onChange={(e) => setVehicleOwnerName(e.target.value)}
-                placeholder="Nome completo do proprietário"
+                placeholder="Nome Completo"
               />
             </div>
-
             <div>
-              <Label htmlFor="vehicle-owner-cpf">CPF do Cliente *</Label>
+              <Label htmlFor="vehicleOwnerCpf">CPF do Proprietário</Label>
               <Input
-                id="vehicle-owner-cpf"
+                id="vehicleOwnerCpf"
                 value={vehicleOwnerCpf}
                 onChange={(e) => setVehicleOwnerCpf(e.target.value)}
-                placeholder="000.000.000-00"
-                maxLength={14}
+                placeholder="XXX.XXX.XXX-XX"
               />
             </div>
-
-            <div className="flex gap-3">
-              <Button 
-                onClick={handleVehicleSubmit}
-                className="bg-secondary hover:bg-secondary/90 flex-1"
-              >
-                Salvar Veículo
-              </Button>
-              <Button 
-                onClick={() => setShowVehicleForm(false)}
-                variant="outline"
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-            </div>
+            <Button onClick={handleAddVehicle} className="w-full">Salvar Veículo</Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Formulário de recuperação de dados */}
-      {showRecoverData && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Recuperar Dados</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Digite seu nome completo e CPF para recuperar seus veículos cadastrados em outros dispositivos.
-            </p>
-            
-            <div>
-              <Label htmlFor="recover-name">Nome Completo *</Label>
-              <Input
-                id="recover-name"
-                value={recoverName}
-                onChange={(e) => setRecoverName(e.target.value)}
-                placeholder="Nome completo"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="recover-cpf">CPF *</Label>
-              <Input
-                id="recover-cpf"
-                value={recoverCpf}
-                onChange={(e) => setRecoverCpf(e.target.value)}
-                placeholder="000.000.000-00"
-                maxLength={14}
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <Button 
-                onClick={handleRecoverData}
-                className="bg-secondary hover:bg-secondary/90 flex-1"
-              >
-                Recuperar Dados
-              </Button>
-              <Button 
-                onClick={() => setShowRecoverData(false)}
-                variant="outline"
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Lista de veículos */}
       {vehicles.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Car className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600 mb-4">Nenhum veículo cadastrado</p>
-            <p className="text-sm text-gray-500">
-              Cadastre seus veículos para facilitar futuras solicitações de guincho
-            </p>
-          </CardContent>
-        </Card>
+        <p>Nenhum veículo cadastrado.</p>
       ) : (
         <div className="space-y-4">
-          {vehicles.map((vehicle) => (
-            <Card key={vehicle.id}>
+          {vehicles.map((vehicle, index) => (
+            <Card key={index}>
               <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center">
-                    <Car className="h-5 w-5 mr-2 text-primary" />
-                    <span className="font-semibold text-lg">{vehicle.plate}</span>
-                  </div>
-                  <Button
-                    onClick={() => handleDeleteVehicle(vehicle.id)}
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                  >
-                    Excluir
-                  </Button>
-                </div>
-                <div className="space-y-1 text-sm text-gray-600">
-                  <p><strong>Categoria:</strong> {vehicle.category}</p>
-                  <p><strong>Proprietário:</strong> {vehicle.ownerName}</p>
-                  <p><strong>CPF:</strong> {vehicle.ownerCpf}</p>
-                  <p><strong>Cadastrado em:</strong> {new Date(vehicle.createdAt).toLocaleDateString('pt-BR')}</p>
-                </div>
+                <p className="font-semibold">Placa: {vehicle.plate}</p>
+                <p>Categoria: {vehicle.category}</p>
+                <p>Proprietário: {vehicle.ownerName}</p>
+                <p>CPF: {vehicle.ownerCpf}</p>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
-    </div>
-  )
 
-  // Renderizar página de login administrativo
-  const renderAdminLogin = () => (
-    <div className="min-h-screen bg-gradient-to-br from-primary to-secondary p-6">
-      <div className="max-w-md mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="bg-white/20 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-            <Shield className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Acesso Administrativo</h1>
-          <p className="text-white/80">Entre com suas credenciais</p>
-        </div>
+      <Button onClick={() => setShowRecoverData(!showRecoverData)} className="w-full mt-4">
+        {showRecoverData ? 'Cancelar' : 'Recuperar Dados de Veículo'}
+      </Button>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="admin-username">Usuário</Label>
-                <Input
-                  id="admin-username"
-                  type="text"
-                  value={adminUsername}
-                  onChange={(e) => setAdminUsername(e.target.value)}
-                  placeholder="Digite seu usuário"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="admin-password">Senha</Label>
-                <Input
-                  id="admin-password"
-                  type="password"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="Digite sua senha"
-                />
-              </div>
-
-              <div className="flex space-x-3">
-                <Button
-                  onClick={handleAdminLogin}
-                  className="flex-1 bg-primary hover:bg-primary/90"
-                  disabled={!adminUsername || !adminPassword}
-                >
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Entrar
-                </Button>
-                
-                <Button
-                  onClick={() => setCurrentView('home')}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
-              </div>
+      {showRecoverData && (
+        <Card className="mt-4">
+          <CardContent className="p-4 space-y-4">
+            <h3 className="font-semibold">Recuperar Dados</h3>
+            <div>
+              <Label htmlFor="recoverName">Nome Completo</Label>
+              <Input
+                id="recoverName"
+                value={recoverName}
+                onChange={(e) => setRecoverName(e.target.value)}
+                placeholder="Nome Completo"
+              />
             </div>
+            <div>
+              <Label htmlFor="recoverCpf">CPF</Label>
+              <Input
+                id="recoverCpf"
+                value={recoverCpf}
+                onChange={(e) => setRecoverCpf(e.target.value)}
+                placeholder="XXX.XXX.XXX-XX"
+              />
+            </div>
+            <Button onClick={handleRecoverData} className="w-full">Recuperar</Button>
           </CardContent>
         </Card>
-      </div>
+      )}
     </div>
   )
 
-  // Renderizar painel administrativo
+  const handleAddVehicle = () => {
+    if (!vehicleCategory || !vehiclePlate || !confirmVehiclePlate || !vehicleOwnerName || !vehicleOwnerCpf) {
+      alert("Por favor, preencha todos os campos para adicionar o veículo.")
+      return
+    }
+    if (vehiclePlate !== confirmVehiclePlate) {
+      alert("As placas não coincidem.")
+      return
+    }
+
+    const newVehicle = {
+      category: vehicleCategory,
+      plate: vehiclePlate,
+      ownerName: vehicleOwnerName,
+      ownerCpf: vehicleOwnerCpf,
+    }
+    const updatedVehicles = [...vehicles, newVehicle]
+    setVehicles(updatedVehicles)
+    localStorage.setItem(`guincho_vehicles_${deviceId}`, JSON.stringify(updatedVehicles))
+    alert("Veículo adicionado com sucesso!")
+    setShowVehicleForm(false)
+    setVehicleCategory('')
+    setVehiclePlate('')
+    setConfirmVehiclePlate('')
+    setVehicleOwnerName('')
+    setVehicleOwnerCpf('')
+  }
+
+  const handleRecoverData = () => {
+    if (!recoverName || !recoverCpf) {
+      alert("Por favor, preencha nome e CPF para recuperar os dados.")
+      return
+    }
+    alert("Funcionalidade de recuperação de dados em desenvolvimento.")
+  }
+
+  const renderAdminLogin = () => (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="mb-6">
+        <Button 
+          variant="ghost" 
+          onClick={() => setCurrentView('home')}
+          className="mb-4"
+        >
+          ← Voltar
+        </Button>
+        <h1 className="text-2xl font-bold text-primary">Acesso Administrativo</h1>
+      </div>
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <div>
+            <Label htmlFor="adminUsername">Usuário</Label>
+            <Input
+              id="adminUsername"
+              value={adminUsername}
+              onChange={(e) => setAdminUsername(e.target.value)}
+              placeholder="Usuário Admin"
+            />
+          </div>
+          <div>
+            <Label htmlFor="adminPassword">Senha</Label>
+            <Input
+              id="adminPassword"
+              type="password"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              placeholder="Senha Admin"
+            />
+          </div>
+          <Button onClick={handleAdminLogin} className="w-full">
+            Entrar
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+
   const renderAdminPanel = () => (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Painel Administrativo</h1>
-              <p className="text-gray-600">Gerencie as solicitações de guincho</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button
-                onClick={loadAdminData}
-                variant="outline"
-                size="sm"
-              >
-                Atualizar
-              </Button>
-              <Button
-                onClick={handleAdminLogout}
-                variant="outline"
-                size="sm"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sair
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Clock className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pendentes</p>
-                  <p className="text-2xl font-bold text-gray-900">{adminStats.pending || 0}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Truck className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Aceitas</p>
-                  <p className="text-2xl font-bold text-gray-900">{adminStats.accepted || 0}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <User className="h-6 w-6 text-red-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Negadas</p>
-                  <p className="text-2xl font-bold text-gray-900">{adminStats.denied || 0}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <History className="h-6 w-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total</p>
-                  <p className="text-2xl font-bold text-gray-900">{adminStats.total || 0}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Lista de solicitações */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Solicitações de Guincho</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {adminRequests.length === 0 ? (
-              <div className="text-center py-8">
-                <Truck className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-600">Nenhuma solicitação encontrada</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {adminRequests.map((request) => (
-                  <Card key={request.id} className="border-l-4 border-l-blue-500">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <div className="flex items-center space-x-2 mb-2">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              request.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                              request.status === 'denied' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {request.status === 'pending' ? 'Pendente' :
-                               request.status === 'accepted' ? 'Aceita' :
-                               request.status === 'denied' ? 'Negada' : 'Concluída'}
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              {new Date(request.timestamp).toLocaleString('pt-BR')}
-                            </span>
-                          </div>
-                          <h3 className="font-semibold text-lg">Solicitação #{request.id.slice(-8)}</h3>
-                        </div>
-                        
-                        {request.status === 'pending' && (
-                          <div className="flex space-x-2">
-                            <Button
-                              onClick={() => updateRequestStatus(request.id, 'accepted')}
-                              size="sm"
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              Aceitar
-                            </Button>
-                            <Button
-                              onClick={() => updateRequestStatus(request.id, 'denied')}
-                              size="sm"
-                              variant="destructive"
-                            >
-                              Negar
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p><strong>Cliente:</strong> {request.client.cpf}</p>
-                          <p><strong>Telefone:</strong> {request.client.phone}</p>
-                          <p><strong>Localização:</strong> {request.location}</p>
-                        </div>
-                        <div>
-                          <p><strong>Veículo:</strong> {request.vehicle.type}</p>
-                          <p><strong>Descrição:</strong> {request.vehicle.description}</p>
-                          {request.thirdParty.isForThirdParty && (
-                            <p><strong>Para terceiro:</strong> {request.thirdParty.name}</p>
-                          )}
-                        </div>
-                      </div>
-
-                      {request.adminNotes && (
-                        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                          <p className="text-sm"><strong>Observações:</strong> {request.adminNotes}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <div className="mb-6">
+        <Button 
+          variant="ghost" 
+          onClick={handleAdminLogout}
+          className="mb-4"
+        >
+          <LogOut className="mr-2 h-5 w-5" /> Sair
+        </Button>
+        <h1 className="text-2xl font-bold text-primary">Painel Administrativo</h1>
       </div>
+
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Estatísticas</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-xl font-bold">{adminStats.total_requests}</p>
+              <p className="text-sm text-gray-500">Total de Solicitações</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-xl font-bold">{adminStats.pending_requests}</p>
+              <p className="text-sm text-gray-500">Pendentes</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-xl font-bold">{adminStats.completed_requests}</p>
+              <p className="text-sm text-gray-500">Concluídas</p>
+            </CardContent>
+          </Card>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Solicitações Recentes</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {adminRequests.length === 0 ? (
+            <p>Nenhuma solicitação pendente.</p>
+          ) : (
+            adminRequests.map((request) => (
+              <Card key={request.id}>
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-500">{new Date(request.created_at).toLocaleString()}</p>
+                  <p className="font-semibold">Cliente: {request.client_name}</p>
+                  <p>Localização: {request.location}</p>
+                  <p>Veículo: {request.vehicleType}</p>
+                  <p>Status: {request.status}</p>
+                  <div className="mt-2 space-x-2">
+                    <Button 
+                      size="sm" 
+                      onClick={() => updateRequestStatus(request.id, 'accepted')}
+                      disabled={request.status === 'accepted'}
+                    >
+                      Aceitar
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="destructive" 
+                      onClick={() => updateRequestStatus(request.id, 'rejected')}
+                      disabled={request.status === 'rejected'}
+                    >
+                      Rejeitar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 
-  // Renderizar a view atual
-  switch (currentView) {
-    case 'request':
-      return renderRequest()
-    case 'history':
-      return renderHistory()
-    case 'vehicles':
-      return renderVehicles()
-    case 'admin-login':
-      return renderAdminLogin()
-    case 'admin-panel':
-      return renderAdminPanel()
-    default:
-      return renderHome()
+  const renderView = () => {
+    switch (currentView) {
+      case 'home':
+        return renderHome()
+      case 'request':
+        return renderRequest()
+      case 'history':
+        return renderHistory()
+      case 'vehicles':
+        return renderVehicles()
+      case 'admin-login':
+        return renderAdminLogin()
+      case 'admin-panel':
+        return renderAdminPanel()
+      default:
+        return renderHome()
+    }
   }
+
+  return (
+    <div className="App">
+      {renderView()}
+    </div>
+  )
 }
 
 export default App
+
 
