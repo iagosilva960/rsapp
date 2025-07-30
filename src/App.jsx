@@ -51,7 +51,9 @@ function App() {
   const [adminStats, setAdminStats] = useState({})
   
   // URL da API do backend
-  const API_BASE_URL = 'http://localhost:5000/api'
+  const API_BASE_URL = process.env.NODE_ENV === 'production' 
+    ? '/api'  // Em produção, usar caminho relativo
+    : 'http://localhost:5000/api'  // Em desenvolvimento, usar localhost
   
   useEffect(() => {
     // Gerar ou recuperar ID único do dispositivo
