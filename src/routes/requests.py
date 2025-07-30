@@ -1,116 +1,86 @@
 from flask import Blueprint, request, jsonify
-from src.models.request import db, TowingRequest
-from datetime import datetime
-import uuid
+from src.models.request import Request
+from src.models.user import db
 
-requests_bp = Blueprint('requests', __name__)
+requests_bp = Blueprint("requests", __name__)
 
-@requests_bp.route('/requests/submit', methods=['POST'])
-def submit_request():
-    try:
-        data = request.get_json()
-        
-        # Validar campos obrigatórios
-        required_fields = ['location', 'vehicleType', 'description', 'phoneNumber', 'clientCpf', 'deviceId']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({
-                    'success': False, 
-                    'message': f'Campo obrigatório ausente: {field}'
-                }), 400
-        
-        # Extrair localização GPS se disponível
-        user_location = data.get('userLocation')
-        lat = None
-        lng = None
-        if user_location and isinstance(user_location, dict):
-            lat = user_location.get('lat')
-            lng = user_location.get('lng')
-        
-        # Criar nova solicitação
-        new_request = TowingRequest(
-            device_id=data['deviceId'],
-            location=data['location'],
-            vehicle_type=data['vehicleType'],
-            description=data['description'],
-            phone_number=data['phoneNumber'],
-            client_cpf=data['clientCpf'],
-            is_for_third_party=data.get('isForThirdParty', False),
-            third_party_name=data.get('thirdPartyName'),
-            third_party_cpf=data.get('thirdPartyCpf'),
-            third_party_phone=data.get('thirdPartyPhone'),
-            user_location_lat=lat,
-            user_location_lng=lng,
-            status='pending'
-        )
-        
-        db.session.add(new_request)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Solicitação enviada com sucesso',
-            'requestId': new_request.id,
-            'request': new_request.to_dict()
-        }), 201
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({
-            'success': False,
-            'message': f'Erro ao processar solicitação: {str(e)}'
-        }), 500
-
-@requests_bp.route('/requests/status/<int:request_id>', methods=['GET'])
-def get_request_status(request_id):
-    try:
-        towing_request = TowingRequest.query.get(request_id)
-        if not towing_request:
-            return jsonify({
-                'success': False,
-                'message': 'Solicitação não encontrada'
-            }), 404
-        
-        return jsonify({
-            'success': True,
-            'request': towing_request.to_dict()
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'Erro ao obter status: {str(e)}'
-        }), 500
-
-@requests_bp.route('/requests/device/<device_id>', methods=['GET'])
-def get_device_requests(device_id):
-    try:
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 10, type=int)
-        
-        requests_paginated = TowingRequest.query.filter_by(device_id=device_id)\
-            .order_by(TowingRequest.created_at.desc())\
-            .paginate(page=page, per_page=per_page, error_out=False)
-        
-        return jsonify({
-            'success': True,
-            'requests': [req.to_dict() for req in requests_paginated.items],
-            'total': requests_paginated.total,
-            'pages': requests_paginated.pages,
-            'current_page': page
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'Erro ao obter histórico: {str(e)}'
-        }), 500
-
-@requests_bp.route('/requests/health', methods=['GET'])
-def health_check():
+@requests_bp.route("/requests", methods=["POST"])
+def create_request():
+    data = request.get_json()
+    
+    # Extrair dados da localização se disponível
+    user_location = data.get("userLocation", {})
+    latitude = user_location.get("lat") if user_location else None
+    longitude = user_location.get("lng") if user_location else None
+    
+    new_request = Request(
+        client_name=data.get("client_name"),
+        client_cpf=data.get("clientCpf"),
+        client_phone=data.get("phoneNumber"),
+        location=data.get("location"),
+        latitude=latitude,
+        longitude=longitude,
+        vehicle_type=data.get("vehicleType"),
+        description=data.get("description"),
+        is_for_third_party=data.get("isForThirdParty", False),
+        third_party_name=data.get("thirdPartyName"),
+        third_party_cpf=data.get("thirdPartyCpf"),
+        third_party_phone=data.get("thirdPartyPhone"),
+        device_id=data.get("deviceId")
+    )
+    
+    db.session.add(new_request)
+    db.session.commit()
+    
     return jsonify({
-        'success': True,
-        'message': 'API funcionando corretamente',
-        'timestamp': datetime.utcnow().isoformat()
+        "success": True, 
+        "message": "Solicitação criada com sucesso", 
+        "id": new_request.id
+    }), 201
+
+@requests_bp.route("/requests/<int:request_id>", methods=["GET"])
+def get_request(request_id):
+    req = Request.query.get_or_404(request_id)
+    return jsonify(req.to_dict())
+
+@requests_bp.route("/requests", methods=["GET"])
+def get_all_requests():
+    # Filtros opcionais
+    status = request.args.get('status')
+    device_id = request.args.get('device_id')
+    
+    query = Request.query
+    
+    if status:
+        query = query.filter_by(status=status)
+    if device_id:
+        query = query.filter_by(device_id=device_id)
+    
+    requests = query.order_by(Request.created_at.desc()).all()
+    return jsonify([req.to_dict() for req in requests])
+
+@requests_bp.route("/requests/<int:request_id>/status", methods=["PUT"])
+def update_request_status(request_id):
+    data = request.get_json()
+    new_status = data.get('status')
+    admin_notes = data.get('adminNotes', '')
+    admin_id = data.get('admin_id')
+    
+    req = Request.query.get_or_404(request_id)
+    req.status = new_status
+    if admin_notes:
+        req.admin_notes = admin_notes
+    if admin_id:
+        req.admin_id = admin_id
+    
+    db.session.commit()
+    
+    return jsonify({
+        "success": True, 
+        "message": "Status atualizado com sucesso"
     })
+
+@requests_bp.route("/requests/health", methods=["GET"])
+def health_check():
+    return jsonify({"status": "healthy", "message": "Requests API is running"})
 
